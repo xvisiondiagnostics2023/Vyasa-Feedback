@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Feedback — Vyasa Diagnostics</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --gold: #C9A84C;
+    --cream: #FDF8F0;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+    --red: #C0392B;
+    --green: #1A6B3C;
+    --green-bg: #D6F5E3;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── FORM VIEW ── */
+  #formView { display: block; }
+  #thankYouView { display: none; }
+  #printView { display: none; }
+
+  .form-header {
+    background: var(--navy);
+    padding: 28px 20px 22px;
+    text-align: center;
+  }
+  .form-header .tagline {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .form-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .form-header p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .form-body {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px 16px 60px;
+  }
+
+  .section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .req { color: var(--red); margin-left: 2px; }
+
+  input[type="text"], input[type="date"], select, textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--navy);
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Star rating */
+  .star-group { display: flex; align-items: center; gap: 4px; }
+  .star-group .stars { display: flex; gap: 3px; }
+  .star {
+    font-size: 26px;
+    cursor: pointer;
+    color: #d1d5db;
+    transition: color 0.1s;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .star.lit { color: var(--gold); }
+  .star-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 8px;
+    min-width: 72px;
+  }
+
+  /* Option buttons */
+  .opts { display: flex; flex-wrap: wrap; gap: 7px; }
+  .opt-btn {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 16px;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
+  }
+  .opt-btn.sel {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+  .q-label {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+  .submit-btn:active { opacity: 0.85; }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: rgba(255,255,255,0.15);
+    height: 3px;
+    margin-top: 14px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* Thank you */
+  #thankYouView {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .thankyou-card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 40px 32px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    border: 1px solid var(--border);
+  }
+  .check-circle {
+    width: 64px;
+    height: 64px;
+    background: var(--green-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 28px;
+    color: var(--green);
+  }
+  .thankyou-card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .thankyou-card p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .gold-bar {
+    width: 40px;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 2px;
+    margin: 16px auto 0;
+  }
+
+  /* ── PRINT CARD VIEW ── */
+  #printView {
+    padding: 20px;
+    background: #f0f0f0;
+    min-height: 100vh;
+  }
+  .print-controls {
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .print-controls button {
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-print {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+  }
+  .btn-back {
+    background: #fff;
+    color: var(--navy);
+    border: 1px solid var(--navy);
+  }
+
+  .card-preview {
+    width: 100mm;
+    min-height: 60mm;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .card-top {
+    background: var(--navy);
+    padding: 14px 16px 12px;
+    text-align: center;
+  }
+  .card-top .c-tag {
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .card-top h2 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+    line-height: 1.3;
+  }
+  .card-top p {
+    font-size: 8px;
+    color: rgba(255,255,255,0.55);
+  }
+  .card-body {
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  #qrcode-card { flex-shrink: 0; }
+  #qrcode-card canvas, #qrcode-card img {
+    display: block;
+    border-radius: 4px;
+  }
+  .card-right { flex: 1; }
+  .card-right .scan-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--navy);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .card-right .scan-steps {
+    font-size: 8.5px;
+    color: #555;
+    line-height: 1.7;
+  }
+  .card-right .scan-steps span {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background: var(--navy);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 7px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 14px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .card-footer {
+    background: var(--cream);
+    border-top: 1px solid #eee;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 7.5px;
+    color: var(--muted);
+  }
+  .card-footer strong { color: var(--navy); }
+
+  .url-hint {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .url-hint strong { color: var(--navy); display: block; margin-bottom: 4px; }
+
+  /* Whatsapp message box */
+  .wa-box {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 12px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--border);
+  }
+  .wa-box .wa-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .wa-msg {
+    background: #DCF8C6;
+    border-radius: 12px 12px 2px 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #111;
+    white-space: pre-line;
+  }
+  .copy-wa {
+    margin-top: 8px;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    width: 100%;
+  }
+  .copy-wa.copied { background: var(--green); }
+
+  @media print {
+    body { background: #fff; }
+    #printView { background: #fff; padding: 0; min-height: unset; }
+    .print-controls, .url-hint, .wa-box { display: none !important; }
+    .card-preview {
+      box-shadow: none;
+      border: 1px solid #ccc;
+      page-break-inside: avoid;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .two-col { grid-template-columns: 1fr; }
+    .star { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ FORM VIEW ══════════ -->
+<div id="formView">
+  <div class="form-header">
+    <div class="tagline">The Bridge of Vision</div>
+    <h1>Patient Feedback</h1>
+    <p>Vyasa Diagnostics &amp; Interventions · Vadodara</p>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <div class="form-body">
+
+    <div class="section">
+      <div class="section-label">Visit details</div>
+      <div class="two-col">
+        <div class="field">
+          <label>Date of visit</label>
+          <input type="date" id="visitDate">
+        </div>
+        <div class="field">
+          <label>Scan / procedure <span class="req">*</span></label>
+          <select id="scanType">
+            <option value="">Select</option>
+            <option>CT Scan</option>
+            <option>CT Coronary Angiography</option>
+            <option>Open MRI</option>
+            <option>Ultrasound / Elastography</option>
+            <option>Mammography</option>
+            <option>DEXA Scan</option>
+            <option>X-Ray</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Referred by (optional)</label>
+        <input type="text" id="refBy" placeholder="Doctor or hospital name">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Rate your experience</div>
+      <div class="q-label">Overall experience <span class="req">*</span></div>
+      <div class="star-group" id="sg-overall">
+        <div class="stars" id="stars-overall"></div>
+        <span class="star-text" id="lbl-overall">Tap to rate</span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Reception and registration <span class="req">*</span></div>
+      <div class="star-group" id="sg-reception">
+        <div class="stars" id="stars-reception"></div>
+        <span class="star-text" id="lbl-reception"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Waiting time <span class="req">*</span></div>
+      <div class="star-group" id="sg-wait">
+        <div class="stars" id="stars-wait"></div>
+        <span class="star-text" id="lbl-wait"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Behaviour of staff <span class="req">*</span></div>
+      <div class="star-group" id="sg-staff">
+        <div class="stars" id="stars-staff"></div>
+        <span class="star-text" id="lbl-staff"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Comfort during the procedure <span class="req">*</span></div>
+      <div class="star-group" id="sg-comfort">
+        <div class="stars" id="stars-comfort"></div>
+        <span class="star-text" id="lbl-comfort"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Doctor's explanation and behaviour <span class="req">*</span></div>
+      <div class="star-group" id="sg-doctor">
+        <div class="stars" id="stars-doctor"></div>
+        <span class="star-text" id="lbl-doctor"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Speed of report delivery <span class="req">*</span></div>
+      <div class="star-group" id="sg-report">
+        <div class="stars" id="stars-report"></div>
+        <span class="star-text" id="lbl-report"></span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="q-label">Cleanliness and facilities <span class="req">*</span></div>
+      <div class="star-group" id="sg-clean">
+        <div class="stars" id="stars-clean"></div>
+        <span class="star-text" id="lbl-clean"></span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Quick questions</div>
+
+      <div class="field">
+        <div class="q-label">Were you explained what would happen before the procedure? <span class="req">*</span></div>
+        <div class="opts" id="opts-explain">
+          <button class="opt-btn" onclick="pick('opts-explain',this,'Yes, clearly')">Yes, clearly</button>
+          <button class="opt-btn" onclick="pick('opts-explain',this,'Partially')">Partially</button>
+          <button class="opt-btn" onclick="pick('opts-explain',this,'No')">No</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <div class="q-label">Was your privacy maintained throughout? <span class="req">*</span></div>
+        <div class="opts" id="opts-privacy">
+          <button class="opt-btn" onclick="pick('opts-privacy',this,'Yes')">Yes</button>
+          <button class="opt-btn" onclick="pick('opts-privacy',this,'No')">No</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <div class="q-label">Would you recommend Vyasa to family or friends? <span class="req">*</span></div>
+        <div class="opts" id="opts-recommend">
+          <button class="opt-btn" onclick="pick('opts-recommend',this,'Yes, definitely')">Yes, definitely</button>
+          <button class="opt-btn" onclick="pick('opts-recommend',this,'Maybe')">Maybe</button>
+          <button class="opt-btn" onclick="pick('opts-recommend',this,'No')">No</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field" style="margin-bottom:0">
+        <div class="q-label">Would you choose a faster or premium service if available?</div>
+        <div class="opts" id="opts-premium">
+          <button class="opt-btn" onclick="pick('opts-premium',this,'Yes')">Yes</button>
+          <button class="opt-btn" onclick="pick('opts-premium',this,'Depends on cost')">Depends on cost</button>
+          <button class="opt-btn" onclick="pick('opts-premium',this,'No')">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Your comments</div>
+      <div class="field">
+        <label>What did we do well?</label>
+        <textarea id="good" placeholder="Tell us what you appreciated…"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>What can we improve?</label>
+        <textarea id="improve" placeholder="Any suggestions are welcome…"></textarea>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Contact (optional)</div>
+      <div class="two-col">
+        <div class="field" style="margin-bottom:0">
+          <label>Name</label>
+          <input type="text" id="pName" placeholder="Your name">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Phone / Email</label>
+          <input type="text" id="pContact" placeholder="+91 …">
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitForm()">Submit feedback</button>
+
+  </div>
+</div>
+
+<!-- ══════════ THANK YOU VIEW ══════════ -->
+<div id="thankYouView">
+  <div class="thankyou-card">
+    <div class="check-circle">✓</div>
+    <h2>Thank you for your feedback</h2>
+    <p>Your response has been recorded. It helps us raise the standard of diagnostic care at Vyasa.</p>
+    <div class="gold-bar"></div>
+  </div>
+</div>
+
+<!-- ══════════ PRINT CARD VIEW ══════════ -->
+<div id="printView">
+  <div class="print-controls">
+    <button class="btn-back" onclick="showForm()">← Back to form</button>
+    <button class="btn-print" onclick="window.print()">Print reception card</button>
+  </div>
+
+  <div class="card-preview">
+    <div class="card-top">
+      <div class="c-tag">The Bridge of Vision</div>
+      <h2>Share your experience with us</h2>
+      <p>Vyasa Diagnostics &amp; Interventions · Vadodara</p>
+    </div>
+    <div class="card-body">
+      <div id="qrcode-card"></div>
+      <div class="card-right">
+        <div class="scan-label">Scan to give feedback</div>
+        <div class="scan-steps">
+          <div><span>1</span> Open your phone camera</div>
+          <div><span>2</span> Point at the QR code</div>
+          <div><span>3</span> Tap the link that appears</div>
+          <div><span>4</span> Fill the short form</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <strong>Your feedback is confidential</strong> and goes directly to our team. Takes 2 minutes.
+    </div>
+  </div>
+
+  <div class="url-hint">
+    <strong>How to set up the live form</strong>
+    Host this HTML file on any free service (Netlify, GitHub Pages, or Tiiny.host). Paste the live URL below and the QR code on the card will update automatically.
+    <br><br>
+    <input type="text" id="urlInput" placeholder="Paste your live form URL here" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-top:4px" oninput="updateQR()">
+  </div>
+
+  <div class="wa-box">
+    <div class="wa-label">WhatsApp message template</div>
+    <div class="wa-msg" id="waMsg"></div>
+    <button class="copy-wa" id="copyWaBtn" onclick="copyWA()">Copy WhatsApp message</button>
+  </div>
+</div>
+
+<script>
+const starLabels = {1:'Poor', 2:'Fair', 3:'Good', 4:'Very good', 5:'Excellent'};
+const starIds = ['overall','reception','wait','staff','comfort','doctor','report','clean'];
+const starVals = {};
+const optVals = {};
+
+function buildStars(id) {
+  const container = document.getElementById('stars-' + id);
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '★';
+    s.dataset.v = i;
+    s.addEventListener('click', () => { starVals[id] = i; renderStars(id); updateProgress(); });
+    s.addEventListener('mouseenter', () => {
+      container.querySelectorAll('.star').forEach(x => x.classList.toggle('lit', +x.dataset.v <= i));
+    });
+    s.addEventListener('mouseleave', () => renderStars(id));
+    container.appendChild(s);
+  }
+}
+
+function renderStars(id) {
+  const v = starVals[id] || 0;
+  document.querySelectorAll('#stars-' + id + ' .star').forEach(s => {
+    s.classList.toggle('lit', +s.dataset.v <= v);
+  });
+  const lbl = document.getElementById('lbl-' + id);
+  if (lbl) lbl.textContent = v ? starLabels[v] : (id === 'overall' ? 'Tap to rate' : '');
+}
+
+starIds.forEach(buildStars);
+
+function pick(groupId, btn, val) {
+  document.querySelectorAll('#' + groupId + ' .opt-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  optVals[groupId] = val;
+  updateProgress();
+}
+
+function updateProgress() {
+  const required = starIds.length + 3;
+  let filled = starIds.filter(id => starVals[id]).length;
+  filled += ['opts-explain','opts-privacy','opts-recommend'].filter(id => optVals[id]).length;
+  const pct = Math.round((filled / required) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxBFLTPTzkw8dU10aAXD2iY2Sk23NiUQGQfQJCa8jtAtwZqppCo5m9d-JJ86Ivlo8GE/exec';
+
+function submitForm() {
+  if (!starVals['overall']) { alert('Please rate your overall experience.'); return; }
+  if (!document.getElementById('scanType').value) { alert('Please select which scan you had.'); return; }
+  if (!optVals['opts-recommend']) { alert('Please answer: would you recommend Vyasa?'); return; }
+
+  const btn = document.querySelector('.submit-btn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  const payload = {
+    timestamp: new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'}),
+    visitDate: document.getElementById('visitDate').value,
+    scanType: document.getElementById('scanType').value,
+    refBy: document.getElementById('refBy').value,
+    overall: starVals['overall'] || '',
+    reception: starVals['reception'] || '',
+    wait: starVals['wait'] || '',
+    staff: starVals['staff'] || '',
+    comfort: starVals['comfort'] || '',
+    doctor: starVals['doctor'] || '',
+    report: starVals['report'] || '',
+    clean: starVals['clean'] || '',
+    explained: optVals['opts-explain'] || '',
+    privacy: optVals['opts-privacy'] || '',
+    recommend: optVals['opts-recommend'] || '',
+    premium: optVals['opts-premium'] || '',
+    good: document.getElementById('good').value,
+    improve: document.getElementById('improve').value,
+    patientName: document.getElementById('pName').value,
+    contact: document.getElementById('pContact').value
+  };
+
+  if (SHEET_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    console.log('Submission data:', payload);
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('thankYouView').style.display = 'flex';
+    window.scrollTo(0, 0);
+    return;
+  }
+
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('thankYouView').style.display = 'flex';
+    window.scrollTo(0, 0);
+  })
+  .catch(() => {
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('thankYouView').style.display = 'flex';
+    window.scrollTo(0, 0);
+  });
+}
+
+function showForm() {
+  document.getElementById('printView').style.display = 'none';
+  document.getElementById('formView').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+let currentQRUrl = window.location.href;
+let qrInstance = null;
+
+function buildQR(url) {
+  const el = document.getElementById('qrcode-card');
+  el.innerHTML = '';
+  qrInstance = new QRCode(el, {
+    text: url,
+    width: 80,
+    height: 80,
+    colorDark: '#1B2A4A',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function updateQR() {
+  const val = document.getElementById('urlInput').value.trim();
+  const url = val || window.location.href;
+  currentQRUrl = url;
+  buildQR(url);
+  updateWAMsg(url);
+}
+
+function updateWAMsg(url) {
+  const msg = `Dear [Patient Name],
+
+Thank you for visiting Vyasa Diagnostics & Interventions.
+
+
+We'd love to hear about your experience — it takes just 2 minutes:
+${url}
+
+Your feedback helps us improve care for every patient.
+
+Warm regards,
+Vyasa Diagnostics & Interventions
+Vadodara`;
+  document.getElementById('waMsg').textContent = msg;
+}
+
+function copyWA() {
+  const text = document.getElementById('waMsg').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyWaBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy WhatsApp message'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date().toISOString().split('T')[0];
+  const d = document.getElementById('visitDate');
+  if (d) d.value = now;
+
+  const printLink = document.createElement('div');
+  printLink.style.cssText = 'text-align:center;padding:8px;font-size:12px;color:#6b7280;cursor:pointer;text-decoration:underline;margin-top:-8px;margin-bottom:8px';
+  printLink.textContent = 'Print reception QR card →';
+  printLink.onclick = () => {
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('printView').style.display = 'block';
+    buildQR(currentQRUrl);
+    updateWAMsg(currentQRUrl);
+    window.scrollTo(0, 0);
+  };
+  document.querySelector('.form-body').appendChild(printLink);
+});
+</script>
+</body>
+</html>
